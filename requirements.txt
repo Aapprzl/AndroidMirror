@@ -1,3 +1,4 @@
 customtkinter
 Pillow
-pywin32
+darkdetect
+PyInstaller
