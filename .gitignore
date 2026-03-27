@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+*.egg-info/
+
+# PyInstaller output
+dist/
+build/
+*.spec
+
+# Downloaded binaries (terlalu besar untuk GitHub)
+bin/
+
+# Config user
+config.json
+
+# IDE
+.venv/
+.antigravity/
+.vscode/
