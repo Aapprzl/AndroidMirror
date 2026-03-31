@@ -18,10 +18,17 @@ import threading
 import urllib.request
 import zipfile
 
+import sys
 # ---------------------------------------------------------------------------
-# Paths
+# Paths (Refactored for PyInstaller portability)
 # ---------------------------------------------------------------------------
-_BASE_DIR      = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if getattr(sys, 'frozen', False):
+    # If running as .exe, use the .exe directory
+    _BASE_DIR = os.path.dirname(sys.executable)
+else:
+    # If running as script, use the project root
+    _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 _SCRCPY_DIR    = os.path.join(_BASE_DIR, "bin", "scrcpy")
 _SCRCPY_EXE    = os.path.join(_SCRCPY_DIR, "scrcpy.exe")
 _GITHUB_API    = "https://api.github.com/repos/Genymobile/scrcpy/releases/latest"

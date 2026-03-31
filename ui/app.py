@@ -1,3 +1,5 @@
+import os
+import sys
 import customtkinter as ctk
 from tkinter import font, messagebox
 
@@ -59,6 +61,30 @@ class AndroidMirrorApp(ctk.CTk):
             on_device_disconnected=self.set_device_disconnected,
             on_status=self._update_status_bar,
         )
+
+        # Set Window Icon
+        self._set_app_icon()
+
+    def _set_app_icon(self):
+        """Set the window icon for the application."""
+        icon_name = "icon.ico"
+        
+        # Check if running as .exe (PyInstaller bundle)
+        if getattr(sys, 'frozen', False):
+            # Bundled data is in sys._MEIPASS
+            base_dir = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
+        else:
+            # Development mode
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+        icon_path = os.path.join(base_dir, icon_name)
+        
+        if os.path.exists(icon_path):
+            try:
+                # On Windows, iconbitmap works best
+                self.iconbitmap(icon_path)
+            except Exception as e:
+                print(f"Error loading icon: {e}")
 
     def create_header(self):
         header_frame = ctk.CTkFrame(self, fg_color="transparent")

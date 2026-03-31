@@ -6,7 +6,14 @@ Handles loading and saving of configuration settings for AndroidMirror.
 import json
 import os
 
-_BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+import sys
+if getattr(sys, 'frozen', False):
+    # If running as .exe, use the .exe directory
+    _BASE_DIR = os.path.dirname(sys.executable)
+else:
+    # If running as script, use the project root
+    _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 _CONFIG_FILE = os.path.join(_BASE_DIR, "config.json")
 
 DEFAULT_CONFIG = {
