@@ -25,7 +25,7 @@ import sys
 # ---------------------------------------------------------------------------
 if getattr(sys, 'frozen', False):
     # If running as .exe, use the .exe directory
-    _BASE_DIR = os.path.dirname(sys.executable)
+    _BASE_DIR = os.path.dirname(os.path.abspath(sys.executable))
 else:
     # If running as script, use the project root
     _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -226,6 +226,35 @@ def get_usb_devices() -> list[str]:
             devices.append(serial)
 
     return devices
+
+
+def get_battery_info(serial: str) -> dict:
+    """
+    Return a dictionary with 'level' (%) and 'temp' (°C) for the given serial.
+    Returns empty dict on failure.
+    """
+    ok, output = _run_adb("-s", serial, "shell", "dumpsys", "battery")
+    if not ok:
+        return {}
+
+    info = {}
+    # level: 100
+    level_match = re.search(r"level:\s+(\d+)", output)
+    if level_match:
+        info["level"] = int(level_match.group(1))
+
+    # temperature: 305 (means 30.5°C)
+    temp_match = re.search(r"temperature:\s+(\d+)", output)
+    if temp_match:
+        info["temp"] = float(temp_match.group(1)) / 10.0
+
+    return info
+
+
+def get_android_version(serial: str) -> str:
+    """Return the Android version string (e.g. '13', '14') for the given serial."""
+    ok, version = _run_adb("-s", serial, "shell", "getprop", "ro.build.version.release")
+    return version if ok else "Unknown"
 
 
 # ---------------------------------------------------------------------------

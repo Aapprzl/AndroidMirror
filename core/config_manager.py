@@ -9,7 +9,7 @@ import os
 import sys
 if getattr(sys, 'frozen', False):
     # If running as .exe, use the .exe directory
-    _BASE_DIR = os.path.dirname(sys.executable)
+    _BASE_DIR = os.path.dirname(os.path.abspath(sys.executable))
 else:
     # If running as script, use the project root
     _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

@@ -37,9 +37,10 @@ class AndroidMirrorApp(ctk.CTk):
         self.grid_rowconfigure(0, weight=0)  # Header
         self.grid_rowconfigure(1, weight=0)  # Status panel
         self.grid_rowconfigure(2, weight=1)  # Center area
-        self.grid_rowconfigure(3, weight=0)  # Start button
-        self.grid_rowconfigure(4, weight=0)  # Bottom buttons
-        self.grid_rowconfigure(5, weight=0)  # Status bar
+        self.grid_rowconfigure(3, weight=0)  # Recording toggle
+        self.grid_rowconfigure(4, weight=0)  # Start button
+        self.grid_rowconfigure(5, weight=0)  # Bottom buttons
+        self.grid_rowconfigure(6, weight=0)  # Status bar
 
         # Create widgets
         self.create_header()
@@ -127,22 +128,31 @@ class AndroidMirrorApp(ctk.CTk):
         # Indicator circle (red for disconnected)
         self.indicator_canvas = ctk.CTkCanvas(
             status_content,
-            width=20,
-            height=20,
+            width=16,
+            height=16,
             highlightthickness=0,
             bg=status_frame._fg_color[1] if ctk.get_appearance_mode() == "Dark" else status_frame._fg_color[0]
         )
-        self.indicator_canvas.grid(row=0, column=0, padx=(0, 10))
-        self.indicator_canvas.create_oval(2, 2, 18, 18, fill="#ff4444", outline="")
+        self.indicator_canvas.grid(row=0, column=0, padx=(0, 12), pady=(4, 0), sticky="n")
+        self.indicator_canvas.create_oval(2, 2, 14, 14, fill="#ff4444", outline="")
 
-        # Status text
+        # Status text (Device Model)
         self.status_text = ctk.CTkLabel(
             status_content,
             text="Tidak ada perangkat terdeteksi",
-            font=ctk.CTkFont(size=16),
+            font=ctk.CTkFont(size=16, weight="bold"),
             text_color="gray70"
         )
         self.status_text.grid(row=0, column=1, sticky="w")
+
+        # Device Info (Android, Battery, Temp)
+        self.device_info_label = ctk.CTkLabel(
+            status_content,
+            text="",
+            font=ctk.CTkFont(size=12),
+            text_color="gray50"
+        )
+        self.device_info_label.grid(row=1, column=1, sticky="w")
 
     def create_center_area(self):
         # Center area (rounded card)
@@ -150,16 +160,15 @@ class AndroidMirrorApp(ctk.CTk):
             self,
             corner_radius=15,
             fg_color=("gray90", "gray20"),
-            height=280
+            height=300
         )
         center_frame.grid(row=2, column=0, padx=20, pady=10, sticky="nsew")
-        center_frame.grid_propagate(False)
         center_frame.grid_columnconfigure(0, weight=1)
         center_frame.grid_rowconfigure(0, weight=1)
 
         # Center content
         center_content = ctk.CTkFrame(center_frame, fg_color="transparent")
-        center_content.grid(row=0, column=0, padx=30, pady=30)
+        center_content.grid(row=0, column=0, padx=20, pady=20)
         center_content.grid_columnconfigure(0, weight=1)
 
         # Phone icon
@@ -182,6 +191,21 @@ class AndroidMirrorApp(ctk.CTk):
         self.instruction_label.grid(row=1, column=0)
 
     def create_start_button(self):
+        # Recording Switch Container
+        record_frame = ctk.CTkFrame(self, fg_color="transparent")
+        record_frame.grid(row=3, column=0, padx=40, pady=(10, 0), sticky="ew")
+        record_frame.grid_columnconfigure(0, weight=1)
+
+        self.record_switch = ctk.CTkSwitch(
+            record_frame,
+            text="Simpan Rekaman (.mkv)",
+            font=ctk.CTkFont(size=14),
+            progress_color=self.accent_color
+        )
+        self.record_switch.grid(row=0, column=0)
+        self._add_tooltip(self.record_switch, "Gunakan .mkv agar rekaman tetap aman (tidak rusak) meski laptop/HP terputus mendadak")
+
+        # Start button
         self.start_button = ctk.CTkButton(
             self,
             text="▶ Mulai Mirror",
@@ -194,14 +218,14 @@ class AndroidMirrorApp(ctk.CTk):
             state="disabled",  # Initially disabled
             command=self._on_mirror_button_click,
         )
-        self.start_button.grid(row=3, column=0, padx=40, pady=20, sticky="ew")
+        self.start_button.grid(row=4, column=0, padx=40, pady=(10, 20), sticky="ew")
         
         # Tooltip
         self._add_tooltip(self.start_button, "Mulai menampilkan layar HP di laptop")
 
     def create_bottom_buttons(self):
         bottom_frame = ctk.CTkFrame(self, fg_color="transparent")
-        bottom_frame.grid(row=4, column=0, padx=20, pady=10, sticky="ew")
+        bottom_frame.grid(row=5, column=0, padx=20, pady=10, sticky="ew")
         bottom_frame.grid_columnconfigure(0, weight=1)
         bottom_frame.grid_columnconfigure(1, weight=1)
 
@@ -246,7 +270,7 @@ class AndroidMirrorApp(ctk.CTk):
             font=ctk.CTkFont(size=12, slant="italic"),
             text_color="gray50"
         )
-        self.status_label.grid(row=5, column=0, padx=20, pady=(10, 20), sticky="w")
+        self.status_label.grid(row=6, column=0, padx=20, pady=(10, 20), sticky="w")
 
     # ------------------------------------------------------------------
     # Mirror button toggle
@@ -260,6 +284,10 @@ class AndroidMirrorApp(ctk.CTk):
             self._set_idle_ui()
             self._update_status_bar("Mirror dihentikan.")
         else:
+            # Prepare options (including recording)
+            launch_options = self.config.copy()
+            launch_options["record"] = self.record_switch.get()
+
             # --- Start ---
             serial = self._current_serial
             if not serial:
@@ -270,7 +298,7 @@ class AndroidMirrorApp(ctk.CTk):
             self._set_streaming_ui()
             started = self._scrcpy.start(
                 device_serial=serial,
-                options=self.config,
+                options=launch_options,
                 on_stop_callback=self._on_scrcpy_stopped,
             )
             if not started:
@@ -289,11 +317,16 @@ class AndroidMirrorApp(ctk.CTk):
 
     def _set_streaming_ui(self):
         """Switch button to Stop mode (called on main thread)."""
+        text = "⏹ Stop Mirror"
+        if self.record_switch.get():
+            text = "⏹ Stop & Save Record"
+
         self.start_button.configure(
-            text="⏹ Stop Mirror",
+            text=text,
             fg_color="#cc2222",
             hover_color="#991111",
         )
+        self.record_switch.configure(state="disabled")
 
     def _set_idle_ui(self):
         """Switch button back to Start mode (called on main thread)."""
@@ -306,12 +339,17 @@ class AndroidMirrorApp(ctk.CTk):
             hover_color="#165ac7",
             state=state,
         )
+        self.record_switch.configure(state="normal")
 
     def _update_center_text(self):
         """Update instruction text based on the current state."""
         if self._is_streaming:
+            status = "Sedang streaming..."
+            if self.record_switch.get():
+                status = "🔴 Sedang Rekam & Mirror..."
+            
             self.instruction_label.configure(
-                text="Sedang streaming ke laptop...",
+                text=status,
                 text_color="#44ff88"
             )
         elif self._current_serial:
@@ -359,22 +397,53 @@ class AndroidMirrorApp(ctk.CTk):
 
     def set_device_connected(self, device_name: str):
         """Update UI to reflect a connected USB device."""
-        # Grab the USB serial (needed by scrcpy) via the clean adb_manager helper
-        from core.adb_manager import get_usb_serials
+        from core.adb_manager import get_usb_serials, get_android_version
         try:
             serials = get_usb_serials()
             self._current_serial = serials[0] if serials else None
+            android_ver = get_android_version(self._current_serial) if self._current_serial else "?"
         except Exception:
             self._current_serial = None
+            android_ver = "?"
 
         def _update():
             self.indicator_canvas.delete("all")
-            self.indicator_canvas.create_oval(2, 2, 18, 18, fill="#44ff88", outline="")
+            self.indicator_canvas.create_oval(2, 2, 14, 14, fill="#44ff88", outline="")
             self.status_text.configure(text=device_name, text_color="#44ff88")
             self.start_button.configure(state="normal")
             self._update_status_bar(f"Perangkat terhubung: {device_name}")
             self._update_center_text()
+            
+            # Show Android version immediately
+            self.device_info_label.configure(text=f"Android {android_ver} | Menunggu data...")
+            
+            # Start periodic stats update
+            self._update_device_stats()
+
         self.after(0, _update)
+
+    def _update_device_stats(self):
+        """Periodically refresh battery and temperature info."""
+        if not self._current_serial:
+            return
+
+        from core.adb_manager import get_battery_info
+        info = get_battery_info(self._current_serial)
+        
+        if info:
+            level = info.get("level", "?")
+            temp = info.get("temp", "?")
+            
+            # Get current text to keep Android version
+            current_text = self.device_info_label.cget("text")
+            android_part = current_text.split("|")[0].strip() if "|" in current_text else "Android"
+            
+            new_text = f"{android_part} | 🔋 {level}% | 🌡️ {temp}°C"
+            self.device_info_label.configure(text=new_text)
+
+        # Schedule next update in 10 seconds if still connected
+        if self._current_serial:
+            self.after(10000, self._update_device_stats)
 
     def set_device_disconnected(self):
         """Update UI to reflect that no USB device is connected."""
@@ -390,6 +459,7 @@ class AndroidMirrorApp(ctk.CTk):
                 text="Tidak ada perangkat terdeteksi",
                 text_color="gray70",
             )
+            self.device_info_label.configure(text="")
             self.start_button.configure(
                 text="▶ Mulai Mirror",
                 fg_color=self.accent_color,

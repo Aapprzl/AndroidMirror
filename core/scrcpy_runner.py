@@ -24,7 +24,7 @@ import sys
 # ---------------------------------------------------------------------------
 if getattr(sys, 'frozen', False):
     # If running as .exe, use the .exe directory
-    _BASE_DIR = os.path.dirname(sys.executable)
+    _BASE_DIR = os.path.dirname(os.path.abspath(sys.executable))
 else:
     # If running as script, use the project root
     _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -226,6 +226,20 @@ class ScrcpyRunner:
                 cmd += ["--turn-screen-off"]
             if options.get("stay_awake"):
                 cmd += ["--stay-awake"]
+            
+            # --- Screen Recording ---
+            if options.get("record"):
+                import datetime
+                record_dir = os.path.join(_BASE_DIR, "recordings")
+                os.makedirs(record_dir, exist_ok=True)
+                
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                # Using .mkv instead of .mp4 for better resilience against 
+                # abrupt process termination (which causes corruption in MP4).
+                filename = f"AndroidMirror_{timestamp}.mkv"
+                record_path = os.path.join(record_dir, filename)
+                
+                cmd += ["--record", record_path]
         
 
         try:
@@ -233,6 +247,7 @@ class ScrcpyRunner:
                 cmd,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.PIPE,
+                cwd=_SCRCPY_DIR,  # Set Working Directory so it finds DLLs
                 creationflags=subprocess.CREATE_NO_WINDOW,
             )
         except Exception as exc:  # noqa: BLE001
@@ -260,11 +275,17 @@ class ScrcpyRunner:
             proc = self._process
         if proc is not None and proc.poll() is None:
             try:
+                # Try to terminate gracefully
                 proc.terminate()
-                proc.wait(timeout=3)
+                # Give it some time to flush the video recording
+                proc.wait(timeout=2)
             except subprocess.TimeoutExpired:
-                proc.kill()
-            except Exception:  # noqa: BLE001
+                # Force kill if still running
+                try:
+                    proc.kill()
+                except Exception:
+                    pass
+            except Exception:
                 pass
         with self._lock:
             self._process = None
