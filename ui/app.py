@@ -488,7 +488,9 @@ class SettingsWindow(ctk.CTkToplevel):
         self.geometry("380x480")
         self.resizable(False, False)
         self.transient(parent)  # Stay on top of parent
-        self.grab_set()         # Modal
+        # Defer grab_set() until the window is actually visible to avoid
+        # "grab failed: window not viewable" on some platforms.
+        self.after(50, self.grab_set)
         
         # UI Setup
         self.grid_columnconfigure(0, weight=1)

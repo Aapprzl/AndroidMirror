@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=AndroidMirror
+Comment=Android Screen Mirroring via USB
+Exec=/home/cxnzr0/AndroidMirror/linux/androidmirror.sh
+Icon=/home/cxnzr0/AndroidMirror/icon.png
+Path=/home/cxnzr0/AndroidMirror
+Terminal=false
+Type=Application
+Categories=Utility;Development;
+StartupNotify=true
