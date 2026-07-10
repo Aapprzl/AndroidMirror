@@ -21,7 +21,8 @@ DEFAULT_CONFIG = {
     "fps": 60,
     "always_on_top": False,
     "turn_screen_off": False,
-    "stay_awake": False
+    "stay_awake": False,
+    "fullscreen": False
 }
 
 def load_config():

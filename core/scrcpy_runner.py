@@ -226,6 +226,8 @@ class ScrcpyRunner:
                 cmd += ["--turn-screen-off"]
             if options.get("stay_awake"):
                 cmd += ["--stay-awake"]
+            if options.get("fullscreen"):
+                cmd += ["--fullscreen"]
             
             # --- Screen Recording ---
             if options.get("record"):

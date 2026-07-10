@@ -531,11 +531,14 @@ class SettingsWindow(ctk.CTkToplevel):
         ctk.CTkSwitch(main_frame, text="Matikan Layar HP", variable=self.turn_screen_off_var).grid(row=5, column=0, columnspan=2, sticky="w", pady=5)
         
         self.stay_awake_var = ctk.BooleanVar(value=self.parent.config.get("stay_awake", False))
-        ctk.CTkSwitch(main_frame, text="Cegah HP Sleep", variable=self.stay_awake_var).grid(row=6, column=0, columnspan=2, sticky="w", pady=(5, 30))
+        ctk.CTkSwitch(main_frame, text="Cegah HP Sleep", variable=self.stay_awake_var).grid(row=6, column=0, columnspan=2, sticky="w", pady=5)
+
+        self.fullscreen_var = ctk.BooleanVar(value=self.parent.config.get("fullscreen", False))
+        ctk.CTkSwitch(main_frame, text="Layar Penuh (Fullscreen)", variable=self.fullscreen_var).grid(row=7, column=0, columnspan=2, sticky="w", pady=(5, 30))
 
         # 4. Action Buttons
         button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
-        button_frame.grid(row=7, column=0, columnspan=2, sticky="ew")
+        button_frame.grid(row=8, column=0, columnspan=2, sticky="ew")
         button_frame.grid_columnconfigure(0, weight=1)
         button_frame.grid_columnconfigure(1, weight=1)
 
@@ -552,7 +555,8 @@ class SettingsWindow(ctk.CTkToplevel):
             "fps": int(self.fps_menu.get()),
             "always_on_top": self.always_on_top_var.get(),
             "turn_screen_off": self.turn_screen_off_var.get(),
-            "stay_awake": self.stay_awake_var.get()
+            "stay_awake": self.stay_awake_var.get(),
+            "fullscreen": self.fullscreen_var.get()
         }
         self.parent.config.update(new_config)
         config_manager.save_config(self.parent.config)
